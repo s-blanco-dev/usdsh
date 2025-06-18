@@ -14,7 +14,7 @@
 /*
  * UCU Unix Distriution Standard Shell v0.2 (AHORA FUNCIONAN EL PIPE)
  * ---------------
- * Santiago Blanco y Martín Mujica
+ * Santiago Blanco Canaparro 2025
  * UCU Unix Standard Shell
  * */
 
