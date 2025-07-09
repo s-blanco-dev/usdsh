@@ -1,20 +1,21 @@
-#include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <termios.h>
 #include <unistd.h>
 
 #define MAX_BUFFER 256
 #define MAX_ARGS 32
 
 /*
- * UCU Unix Distriution Standard Shell v0.2 (AHORA FUNCIONAN EL PIPE)
+ * UCU Unix Distriution Standard Shell v0.3 (AHORA CON CONTROL DE TTY)
  * ---------------
- * Santiago Blanco Canaparro 2025
+ * Santiago Blanco 2025
  * UCU Unix Standard Shell
  * */
 
@@ -25,9 +26,24 @@ void parseArgs(char *input, char **args, int *argc);
 // ------------------------
 
 int main() {
+  if (tcgetpgrp(STDIN_FILENO) != getpgrp()) {
+    tcsetpgrp(STDIN_FILENO, getpgrp());
+  }
+
   char inputBuf[MAX_BUFFER];
   char *cmd1_args[MAX_ARGS];
   char *cmd2_args[MAX_ARGS];
+
+  /* TODO ESTO ES NECESARIO PARA MANEJAR SIGNALS EN TTY
+   * ES CRITICO MANTENERLO */
+
+  signal(SIGTTOU, SIG_IGN);
+  signal(SIGTTIN, SIG_IGN);
+  signal(SIGTSTP, SIG_IGN);
+
+  pid_t shell_pgid = getpid();
+  setpgid(shell_pgid, shell_pgid);
+  tcsetpgrp(STDIN_FILENO, shell_pgid);
 
   for (;;) {
     prompt();
@@ -82,6 +98,7 @@ int main() {
 
       // El fork y exec propiamente dicho, crea un hijo y reemplaza su contenido
       // por el programa dado
+
       pid_t pid = fork();
 
       if (pid == -1) {
@@ -90,15 +107,38 @@ int main() {
       }
 
       if (pid == 0) {
+        // Proceso hijo
+
+        // pone al hijo en su propio grupo
+        setpgid(0, 0);
+
+        // toma el control del TTY
+        tcsetpgrp(STDIN_FILENO, getpid());
+
+        // restaura signals default
+        signal(SIGINT, SIG_DFL);
+        signal(SIGQUIT, SIG_DFL);
+
         execvp(cmd1_args[0], cmd1_args);
         perror("exec");
         exit(1);
       } else {
-        wait(NULL);
+        // proceso padre (la shell)
+
+        // aseguremus que el hijo esté en su grupo
+        setpgid(pid, pid);
+
+        // doy control de terminal a hijo
+        tcsetpgrp(STDIN_FILENO, pid);
+
+        int status;
+        waitpid(pid, &status, 0);
+
+        // recuperamos control del terminal
+        tcsetpgrp(STDIN_FILENO, getpid());
         continue;
       }
     }
-
     // OJO QUE SE VIENE UN PIPE
     // SEPARO ARGUMENTOS DEL SEGUNDO COMANDO
     int argc2 = 0;
