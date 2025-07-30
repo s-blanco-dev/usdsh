@@ -13,7 +13,7 @@
 #define MAX_ARGS 32
 
 /*
- * UCU Unix Distriution Standard Shell v0.3 (AHORA CON CONTROL DE TTY)
+ * UCU Unix Distriution Standard Shell v0.4 (AHORA CON REDIRECCIÓN DE SALIDA)
  * ---------------
  * Santiago Blanco 2025
  * UCU Unix Standard Shell
@@ -21,6 +21,7 @@
 
 void prompt();
 void parseArgs(char *input, char **args, int *argc);
+int handleRedirect(char** args);
 
 // ------------------------
 // ------------------------
@@ -107,18 +108,16 @@ int main() {
       }
 
       if (pid == 0) {
-        // Proceso hijo
-
-        // pone al hijo en su propio grupo
         setpgid(0, 0);
-
-        // toma el control del TTY
         tcsetpgrp(STDIN_FILENO, getpid());
-
-        // restaura signals default
         signal(SIGINT, SIG_DFL);
         signal(SIGQUIT, SIG_DFL);
 
+        int out_fd = handleRedirect(cmd1_args);
+        if (out_fd != -1) {
+          dup2(out_fd, STDOUT_FILENO);
+          close(out_fd);
+        }
         execvp(cmd1_args[0], cmd1_args);
         perror("exec");
         exit(1);
@@ -219,4 +218,25 @@ void parseArgs(char *input, char **args, int *argc) {
     tok = strtok(NULL, " ");
   }
   args[*argc] = NULL;
+}
+
+// esto marcha joyazo
+int handleRedirect(char** args) {
+ for (int i = 0; args[i] != NULL; i++) {
+    if (strcmp(args[i], ">") == 0 && args[i + 1] != NULL) {
+      int fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+      if (fd < 0) {
+        perror("open >");
+        exit(1);
+      }
+
+      // eliminamus el operador y el nombre de archivo del array de args
+      for (int j = i; args[j + 2] != NULL; j++) {
+        args[j] = args[j + 2];
+      }
+      args[i] = NULL; // marcan fin del array
+      return fd;
+    }
+  }
+  return -1; // no redirección
 }
