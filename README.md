@@ -5,9 +5,15 @@
 ---
 
 Intérprete de comandos simple escrito en C con fines educativos. Incluye:
-- Soporte parcial para pipes (Hasta 1 pipe)
-- Soporte para redirección de salida y salida con append (> y >>)
-- Control de señales de TTY
-
+- ✔️ **Ejecución de comandos externos** (vía `fork()` y `execvp`)
+- ✔️ **Built-ins básicos**: `cd`, `exit`, `help`
+- ✔️ **Redirección de salida**:
+  - Sobrescribir archivo: `comando > archivo.txt`
+  - Agregar al final del archivo: `comando >> archivo.txt`
+- ✔️ **Pipes**: Soporta hasta un (1) pipe `comando1 | comando2`, ignora todo a partir del segundo pipe, así que ojo.
+- ✔️ **Manejo de señales y TTY**:
+  - Control total de terminal por parte del proceso en primer plano
+  - Ignora `SIGTTOU`, `SIGTTIN`, `SIGTSTP` en la shell
+  - Restaura señales por defecto en procesos hijos
 ---
 - Documentación disponible próximamente (en algún futuro lejano)
