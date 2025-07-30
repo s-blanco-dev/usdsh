@@ -221,8 +221,10 @@ void parseArgs(char *input, char **args, int *argc) {
 }
 
 // esto marcha joyazo
-int handleRedirect(char** args) {
- for (int i = 0; args[i] != NULL; i++) {
+int handleRedirect(char **args) {
+  for (int i = 0; args[i] != NULL; i++) {
+
+    // redirección de salida 
     if (strcmp(args[i], ">") == 0 && args[i + 1] != NULL) {
       int fd = open(args[i + 1], O_WRONLY | O_CREAT | O_TRUNC, 0644);
       if (fd < 0) {
@@ -230,13 +232,30 @@ int handleRedirect(char** args) {
         exit(1);
       }
 
-      // eliminamus el operador y el nombre de archivo del array de args
+      // eliminar > y archivo de args
       for (int j = i; args[j + 2] != NULL; j++) {
         args[j] = args[j + 2];
       }
-      args[i] = NULL; // marcan fin del array
+      args[i] = NULL;
+      return fd;
+    }
+
+    // redirección con append: >>
+    if (strcmp(args[i], ">>") == 0 && args[i + 1] != NULL) {
+      int fd = open(args[i + 1], O_WRONLY | O_CREAT | O_APPEND, 0644);
+      if (fd < 0) {
+        perror("open >>");
+        exit(1);
+      }
+
+      // Eliminar >> y archivo de args
+      for (int j = i; args[j + 2] != NULL; j++) {
+        args[j] = args[j + 2];
+      }
+      args[i] = NULL;
       return fd;
     }
   }
-  return -1; // no redirección
+  return -1; // no hay redirección :(
 }
+
