@@ -4,6 +4,10 @@
 
 ---
 
-Intérprete de comandos simple escrito en C con fines educativos, con soporte parcial para pipes.
+Intérprete de comandos simple escrito en C con fines educativos. Incluye:
+- Soporte parcial para pipes (Hasta 1 pipe)
+- Soporte para redirección de salida y salida con append (> y >>)
+- Control de señales de TTY
 
+---
 - Documentación disponible próximamente (en algún futuro lejano)
